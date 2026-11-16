@@ -11,6 +11,7 @@ gaozhao-ledger-sync/
 ├── SKILL.md
 ├── references/
 │   ├── setup-checklist.md          # 首次登录、权限、ID 收集
+│   ├── dingtalk-resources.md       # 正式试点 Base/表/看板真实链接
 │   ├── sync-state.md               # 全量/增量、去重、状态更新
 │   ├── aitable-api.md              # 钉钉 AI 表格 API
 │   ├── field-mapping.md            # 26 列字段映射
@@ -33,10 +34,19 @@ gaozhao-ledger-sync/
 
 ```text
 请从 https://github.com/henrybridge004-hub/gaozhao-ledger 安装并使用 gaozhao-ledger-sync。
-先读 SKILL.md 和 references/setup-checklist.md，检查钉钉 dws、薪人薪事 MCP、内置浏览器登录和权限；
+先读 SKILL.md 和 references/setup-checklist.md、references/dingtalk-resources.md，检查钉钉 dws、薪人薪事 MCP、内置浏览器登录和权限；
 再复制 config.example.json、sync_state.example.json 生成我的配置和状态文件。
 今天只做首次全量 dry-run，输出 26 列台账、面试反馈、同步报告和异常清单，不要写钉钉表。
 ```
+
+## 正式试点钉钉资源
+
+- Base：[高招台账（正式试点）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY)
+- [招聘管理（26 列台账）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f)
+- [周度漏斗分析](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DoTomHLK)
+- [高招团队周度复盘](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd)
+
+完整 ID 和使用规则见 `gaozhao-ledger-sync/references/dingtalk-resources.md`。
 
 ## 首次使用
 

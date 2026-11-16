@@ -126,7 +126,7 @@ python scripts/validate_ledger.py \
 其他 HR 的 AI 拿到仓库链接后：
 
 1. 克隆/下载仓库，把 `gaozhao-ledger-sync` 整个目录放到 `workspace/.user_skills/`。
-2. 先读 `SKILL.md`，再按任务读取 `setup-checklist.md`、`sync-state.md`、`aitable-api.md`。
+2. 先读 `SKILL.md`，再按任务读取 `setup-checklist.md`、`dingtalk-resources.md`、`sync-state.md`、`aitable-api.md`。
 3. 复制 `config.example.json` 和 `sync_state.example.json`，生成自己的配置和状态文件。
 4. 先完成登录/权限检查，再跑全量 dry-run；确认后才允许写入和定时任务。
 5. 每人一份配置，不把个人配置提交到公开仓库。
@@ -146,6 +146,7 @@ python scripts/validate_ledger.py \
 ## References
 
 - `references/setup-checklist.md`：首次登录、权限、ID 收集和验收清单。
+- `references/dingtalk-resources.md`：正式试点 Base、26 列表、周度表和团队看板的真实链接。
 - `references/sync-state.md`：全量/增量差异、状态文件、去重、状态变化和重试。
 - `references/aitable-api.md`：钉钉 AI 表格、记录、图表和 upsert API。
 - `references/field-mapping.md`：26 列逐列来源、轮次映射、评价提取。

@@ -15,13 +15,14 @@
     "reconcile_lookback_days": 90
   },
   "dingtalk": {
-    "base_id": "<钉钉AI表格 baseId>",
-    "ledger_table_id": "<26列招聘管理 tableId>",
-    "weekly_table_id": "<周度漏斗分析 tableId>",
-    "dashboard_id": "<团队看板 dashboardId>",
-    "personal_ledger_url": "<粘贴个人台账钉钉表格链接>",
-    "weekly_table_url": "<粘贴周度漏斗表链接>",
-    "dashboard_url": "<粘贴团队看板链接>",
+    "base_id": "vy20BglGWOexXo2KsDEk9jn9JA7depqY",
+    "ledger_table_id": "t4tIt8f",
+    "weekly_table_id": "oTomHLK",
+    "dashboard_id": "dashboard-daf0fabe-e32a-47bb-a375-226bced30dbd",
+    "base_url": "https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY",
+    "personal_ledger_url": "https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f",
+    "weekly_table_url": "https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DoTomHLK",
+    "dashboard_url": "https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd",
     "interview_detail_url": "<可选：面试反馈明细钉钉表格链接>"
   },
   "score_rules": {
