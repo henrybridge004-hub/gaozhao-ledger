@@ -1,0 +1,14 @@
+# 本地配置与抓取数据，不要提交
+config.json
+raw/
+out/
+test_out/
+*.log
+
+# 办公文件与系统缓存
+*.xlsx
+*.xls
+*.csv
+!gaozhao-ledger-sync/assets/*.csv
+.DS_Store
+Thumbs.db

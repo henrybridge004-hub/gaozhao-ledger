@@ -1,0 +1,26 @@
+{
+  "hr_name": "<你的姓名>",
+  "owner_id": "<你的薪人薪事招聘域 ownerId>",
+  "timezone": "Asia/Shanghai",
+  "daily_run_time": "20:30",
+  "date_window": {
+    "mode": "rolling_days",
+    "days": 30
+  },
+  "dingtalk": {
+    "personal_ledger_url": "<粘贴个人台账钉钉表格链接>",
+    "public_funnel_url": "<粘贴公开漏斗钉钉表格链接>",
+    "interview_detail_url": "<可选：面试反馈明细钉钉表格链接>"
+  },
+  "score_rules": {
+    "recommend": 0,
+    "screen_pass": 0,
+    "interview_scheduled": 0,
+    "interview_passed": 0,
+    "offer": 0,
+    "onboard": 0
+  },
+  "dry_run": true,
+  "max_pages": 20,
+  "page_size": 100
+}
