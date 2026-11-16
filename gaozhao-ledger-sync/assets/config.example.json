@@ -3,13 +3,25 @@
   "owner_id": "<你的薪人薪事招聘域 ownerId>",
   "timezone": "Asia/Shanghai",
   "daily_run_time": "20:30",
-  "date_window": {
-    "mode": "rolling_days",
-    "days": 30
+  "sync_state_file": "./sync_state.json",
+  "full_crawl": {
+    "start_date": "2026-10-01",
+    "end_date": null
+  },
+  "incremental": {
+    "lookback_days": 30,
+    "detail_fetch": "changed_only",
+    "reconcile_weekday": "Monday",
+    "reconcile_lookback_days": 90
   },
   "dingtalk": {
+    "base_id": "<钉钉AI表格 baseId>",
+    "ledger_table_id": "<26列招聘管理 tableId>",
+    "weekly_table_id": "<周度漏斗分析 tableId>",
+    "dashboard_id": "<团队看板 dashboardId>",
     "personal_ledger_url": "<粘贴个人台账钉钉表格链接>",
-    "public_funnel_url": "<粘贴公开漏斗钉钉表格链接>",
+    "weekly_table_url": "<粘贴周度漏斗表链接>",
+    "dashboard_url": "<粘贴团队看板链接>",
     "interview_detail_url": "<可选：面试反馈明细钉钉表格链接>"
   },
   "score_rules": {

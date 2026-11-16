@@ -26,7 +26,7 @@
 }
 ```
 
-首次回填用 `mode: "explicit"`，写明起止日期。每次同步按 `resumeId + applyJobId` upsert，不会因为滚动窗口重复追加。
+首次回填用 `mode: "explicit"`，写明起止日期。每次同步按 `resumeId + applyJobId` upsert，不会因为滚动窗口重复追加。每日列表仍需滚动拉取，但 stage-info 详情只对新增或变化记录抓取，具体状态文件和去重规则见 `sync-state.md`。
 
 ## 定时任务模板
 
