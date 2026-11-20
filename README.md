@@ -2,7 +2,7 @@
 
 公开仓库：[gaozhao-ledger](https://github.com/henrybridge004-hub/gaozhao-ledger)
 
-一个给 HR 团队复用的招聘台账工作流：从薪人薪事按 `jobOwners` 取数，生成固定 26 列个人台账、面试反馈明细、公开漏斗和团队看板，并更新到钉钉 AI 表格。个人候选人明细互相不可见；HRD Tracy、招聘运营晓欢可看全量；漏斗、转化率和排名对全组公开。
+一个给 HR 团队复用的招聘台账工作流：从薪人薪事按 `jobOwners` 取数，生成固定 26 列个人台账、面试反馈明细、公开漏斗和团队看板，并更新到钉钉 AI 表格。原 26 列保持不变，另追加 12 个文本字段承接个人 Excel 中的简历、电话沟通和面试过程信息，当前共 38 个字段。个人候选人明细互相不可见；HRD Tracy、招聘运营晓欢可看全量；漏斗、转化率和排名对全组公开。
 
 ## 目录
 
@@ -15,13 +15,16 @@ gaozhao-ledger-sync/
 │   ├── sync-state.md               # 全量/增量、去重、状态更新
 │   ├── aitable-api.md              # 钉钉 AI 表格 API
 │   ├── field-mapping.md            # 26 列字段映射
+│   ├── process-field-mapping.md    # 12 个过程字段映射
+│   ├── process-sync.md             # 个人过程台账同步流程
 │   ├── source-api.md               # 薪人薪事 MCP/浏览器接口
 │   ├── dingtalk-and-permissions.md
 │   └── scheduling.md
 ├── scripts/
 │   ├── state_store.py              # 状态、哈希、recordId 映射
 │   ├── build_ledger.py
-│   └── validate_ledger.py
+│   ├── validate_ledger.py
+│   └── sync_process_fields.py      # 个人 Excel 过程字段载荷生成
 └── assets/
     ├── config.example.json
     ├── sync_state.example.json
@@ -42,7 +45,7 @@ gaozhao-ledger-sync/
 ## 正式试点钉钉资源
 
 - Base：[高招台账（正式试点）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY)
-- [招聘管理（26 列台账）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f)
+- [招聘管理（38 字段）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f)
 - [周度漏斗分析](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DY9ctSpD)
 - [高招团队周度复盘](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd)
 
@@ -64,6 +67,14 @@ gaozhao-ledger-sync/
 - 去重：同一 `resumeId + applyJobId` 永远更新同一行；历史记录缺少外部 ID 时用“姓名 + 手机号 + 岗位”兜底。
 - 状态变化：例如“二面待定”后来变成“Offer/待入职”，只更新原 recordId，不重复创建。
 - 周度表：当前实例不支持公式字段，转化率和漏斗数由同步任务预计算。
+
+## 个人过程台账同步
+
+1. 回读钉钉表结构和现有记录，按姓名匹配候选人；正式写入前先处理重名和缺失记录。
+2. 使用 `scripts/sync_process_fields.py` 从个人 Excel 生成更新、新建和聚合报告三类 JSON。
+3. 先对 update/create 载荷执行 dws dry-run，确认后再写入，每批最多 100 条。
+4. 原 26 列不改名、不换序；12 个过程字段的 fieldId 和映射见 `references/process-field-mapping.md`。
+5. 岗位、简历或面评没有可靠来源时保留待补，不从面试文本推断。
 
 ## 发布前检查
 

@@ -9,7 +9,7 @@
 | 资源 | ID | 链接 |
 |---|---|---|
 | Base：高招台账（正式试点） | `vy20BglGWOexXo2KsDEk9jn9JA7depqY` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY |
-| 招聘管理（26 列台账） | `t4tIt8f` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f |
+| 招聘管理（原 26 列 + 12 个过程字段，共 38 字段） | `t4tIt8f` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f |
 | 周度漏斗分析 | `Y9ctSpD` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DY9ctSpD |
 | 高招团队周度复盘 | `dashboard-daf0fabe-e32a-47bb-a375-226bced30dbd` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd |
 
@@ -21,6 +21,7 @@
 4. 首次运行必须先 dry-run，确认匹配记录、异常和权限后，再正式写入。
 5. 若打开链接出现无权限提示，先联系管理员调整钉钉角色，不要绕过权限或复制到个人新表。
 6. 每日同步必须按 `resumeId + applyJobId` 更新同一行，不重复创建候选人。
+7. 个人过程字段的字段 ID、映射和同步步骤见 `process-field-mapping.md`、`process-sync.md`。
 
 ## 配置对应关系
 

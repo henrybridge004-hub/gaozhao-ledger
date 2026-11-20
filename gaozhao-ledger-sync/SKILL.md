@@ -1,6 +1,6 @@
 ---
 name: gaozhao-ledger-sync
-description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候选人与面试流程，生成固定 26 列个人台账、面试反馈明细和公开漏斗，并更新钉钉 AI 表格。适用于首次搭建高招台账、每日增量同步、补历史数据、核对台账口径、配置“个人明细互相不可见但漏斗公开排名”，以及让其他 HR 的 AI 复用同一套登录、去重、状态更新和定时任务流程。
+description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候选人与面试流程，生成固定 26 列个人台账、面试反馈明细、公开漏斗和团队看板，并更新钉钉 AI 表格；支持把个人 Excel 中的 12 个简历/面试过程字段追加同步到钉钉。适用于首次搭建高招台账、每日增量同步、补历史数据、核对台账口径、配置“个人明细互相不可见但漏斗公开排名”，以及让其他 HR 的 AI 复用同一套登录、去重、状态更新和定时任务流程。
 ---
 
 # 高招台账自动同步
@@ -13,10 +13,12 @@ description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候�
 2. **面试反馈明细**：一场面试一行，保留面试官、结果、评分、评语、能力项。
 3. **公开漏斗/团队看板**：只放人数、场次、转化率、点数和排名，不放候选人明细。
 4. **全量与增量同步**：首次建立基线；每日按状态文件跳过未变化记录，更新同一行而不是重复创建。
+5. **个人过程字段同步**：在原 26 列后追加 12 个文本字段，承接个人 Excel 中的简历、电话沟通和各轮面试过程信息。
 
 ## Non-negotiables
 
 - **26 列顺序不变**：`HR姓名、候选人姓名、来源渠道、城市、招聘岗位、手机号、最近任职公司、上家任职职位、薪资架构、沟通备注、HR沟通结果、推荐简历时间、简历推荐是否通过、一轮面试时间、原因1、一轮面试结果、二轮面试时间、原因2、二轮面试结果、终面面试时间、原因3、终面面试结果、offer情况、入职状态、入职时间、备注`。
+- **12 个过程字段只追加、不替代原字段**；字段名、fieldId 和映射以 `references/process-field-mapping.md` 为准。
 - **HR 姓名取 `jobOwners` 当前负责人**，不要只取 `recommendHR`。
 - **个人明细不进公开漏斗**；公开漏斗只允许聚合数字。
 - **不整表覆盖**：按 `resumeId + applyJobId` 幂等 upsert；历史记录没有外部 ID 时用“姓名 + 手机号 + 岗位”兜底。
@@ -92,14 +94,21 @@ python scripts/validate_ledger.py \
 4. 成功后把 recordId、内容哈希和写入时间保存到状态文件。
 5. 失败记录保留在失败队列，下次重试；不重复提交已成功记录。
 
-### 6. Rebuild weekly table and dashboard
+### 6. Sync personal process fields
+
+- 回读最新表结构和记录，使用 `scripts/sync_process_fields.py` 从个人 Excel 生成 process update/create 载荷。
+- 先分别执行 dws record update/create 的 dry-run；确认后再写入。
+- 未确认的招聘岗位、简历和面评保持待补，不根据面试文本推断。
+- 详细步骤见 `references/process-sync.md`，字段映射见 `references/process-field-mapping.md`。
+
+### 7. Rebuild weekly table and dashboard
 
 - 个人台账更新后，重新计算并写入周度漏斗表。
 - 当前实例不支持公式字段时，转化率使用 number/percent 预计算。
 - 图表更新是完整配置替换；图表创建后如显示名被改，需要再更新名称。
 - 窗口过窄时只能查看，不能编辑布局；拉宽浏览器后再调整。
 
-### 7. Report
+### 8. Report
 
 只汇报聚合结果和异常：新增、更新、跳过、未评价、缺推荐时间、状态冲突、登录失效；不展示候选人姓名、手机号或面评原文。
 
@@ -150,10 +159,13 @@ python scripts/validate_ledger.py \
 - `references/sync-state.md`：全量/增量差异、状态文件、去重、状态变化和重试。
 - `references/aitable-api.md`：钉钉 AI 表格、记录、图表和 upsert API。
 - `references/field-mapping.md`：26 列逐列来源、轮次映射、评价提取。
+- `references/process-field-mapping.md`：12 个过程字段、fieldId 和个人 Excel 映射。
+- `references/process-sync.md`：个人过程台账的回读、dry-run、写入和验收流程。
 - `references/source-api.md`：薪人薪事 MCP、浏览器 XHR 和字段限制。
 - `references/dingtalk-and-permissions.md`：钉钉表结构与权限分层。
 - `references/scheduling.md`：定时任务模板和登录态处理。
 - `scripts/state_store.py`：状态文件、内容哈希、recordId 映射和重试辅助。
 - `scripts/build_ledger.py`：原始 JSON → 26 列台账/面试明细/漏斗。
 - `scripts/validate_ledger.py`：写表前校验。
+- `scripts/sync_process_fields.py`：个人 Excel → 钉钉过程字段 update/create 载荷。
 - `assets/config.example.json`、`assets/sync_state.example.json`：配置和状态模板。
