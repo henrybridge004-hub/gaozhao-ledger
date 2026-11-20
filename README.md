@@ -43,7 +43,7 @@ gaozhao-ledger-sync/
 
 - Base：[高招台账（正式试点）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY)
 - [招聘管理（26 列台账）](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f)
-- [周度漏斗分析](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DoTomHLK)
+- [周度漏斗分析](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DY9ctSpD)
 - [高招团队周度复盘](https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd)
 
 完整 ID 和使用规则见 `gaozhao-ledger-sync/references/dingtalk-resources.md`。
