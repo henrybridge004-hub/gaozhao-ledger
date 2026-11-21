@@ -1,5 +1,16 @@
-# 本地配置与抓取数据，不要提交
+# 本地配置、状态与凭证，不要提交
 config.json
+sync_state.json
+sync_state.json.tmp
+.env
+.env.*
+!.env.example
+credentials*
+*.token
+*.pem
+*.key
+*.p12
+*.pfx
 raw/
 out/
 test_out/

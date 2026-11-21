@@ -1,24 +1,28 @@
 ---
 name: gaozhao-ledger-sync
-description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候选人与面试流程，生成固定 26 列个人台账、面试反馈明细、公开漏斗和团队看板，并更新钉钉 AI 表格；支持把个人 Excel 中的 12 个简历/面试过程字段追加同步到钉钉。适用于首次搭建高招台账、每日增量同步、补历史数据、核对台账口径、配置“个人明细互相不可见但漏斗公开排名”，以及让其他 HR 的 AI 复用同一套登录、去重、状态更新和定时任务流程。
+description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候选人与面试流程，生成标准个人台账、面试反馈明细、公开漏斗和团队看板，并更新钉钉 AI 表格；支持把个人 Excel 中的 12 个简历/面试过程字段、腾讯会议智能纪要同步到钉钉。适用于首次搭建高招台账、每日增量同步、补历史数据、核对台账口径、配置“个人明细互相不可见但漏斗公开排名”，以及让其他 HR 的 AI 复用同一套登录、去重、状态更新和定时任务流程。
 ---
 
 # 高招台账自动同步
 
 ## What this skill does
 
-把薪人薪事招聘数据整理成 HRD 可用的高招台账，并保持 HR 原有 26 个字段不变：
+把薪人薪事招聘数据整理成 HRD 可用的高招台账，并保持 fieldId、记录和单元格数据稳定：
 
-1. **个人台账**：26 列，一人一行；候选人明细只对本人、HRD、招聘运营可见。
+1. **个人台账**：38 个标准字段，一人一行；候选人明细只对本人、HRD、招聘运营可见。
 2. **面试反馈明细**：一场面试一行，保留面试官、结果、评分、评语、能力项。
 3. **公开漏斗/团队看板**：只放人数、场次、转化率、点数和排名，不放候选人明细。
 4. **全量与增量同步**：首次建立基线；每日按状态文件跳过未变化记录，更新同一行而不是重复创建。
-5. **个人过程字段同步**：在原 26 列后追加 12 个文本字段，承接个人 Excel 中的简历、电话沟通和各轮面试过程信息。
+5. **个人过程字段同步**：12 个文本字段承接个人 Excel 中的简历、电话沟通和各轮面试过程信息。
+6. **腾讯会议智能纪要同步**：通过腾讯会议 CLI 获取已处理完成的智能纪要，写入对应轮次的面试情况字段。
+7. **超时未评价治理**：最后一轮面试“未评价”超过 3 天且无后续面试时，仅把该轮结果改为“未通过”。
 
 ## Non-negotiables
 
-- **26 列顺序不变**：`HR姓名、候选人姓名、来源渠道、城市、招聘岗位、手机号、最近任职公司、上家任职职位、薪资架构、沟通备注、HR沟通结果、推荐简历时间、简历推荐是否通过、一轮面试时间、原因1、一轮面试结果、二轮面试时间、原因2、二轮面试结果、终面面试时间、原因3、终面面试结果、offer情况、入职状态、入职时间、备注`。
-- **12 个过程字段只追加、不替代原字段**；字段名、fieldId 和映射以 `references/process-field-mapping.md` 为准。
+- **38 个标准字段按业务流程展示**：基础信息 → 简历/沟通 → 一面 → 二面 → 三面 → 汇总 → Offer/入职 → 备注；完整 fieldId 和顺序以 `references/field-mapping.md` 为准。
+- **12 个过程字段不替代官方结果字段**；字段名、fieldId 和来源映射以 `references/process-field-mapping.md` 为准。
+- **腾讯会议智能纪要只写面试情况字段，不改官方面试结果**；同步口径以 `references/tencent-meeting-smart-minutes.md` 为准。
+- **超时未评价只改最后一轮结果字段**：严格超过 72 小时、无后续面试且无积极下游状态时改为“未通过”，不自动补原因或面评。
 - **HR 姓名取 `jobOwners` 当前负责人**，不要只取 `recommendHR`。
 - **个人明细不进公开漏斗**；公开漏斗只允许聚合数字。
 - **不整表覆盖**：按 `resumeId + applyJobId` 幂等 upsert；历史记录没有外部 ID 时用“姓名 + 手机号 + 岗位”兜底。
@@ -51,7 +55,9 @@ description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候�
 
 ### 1. Preflight
 
-- 读取 `config.json`、状态文件和钉钉表头，确认 26 列顺序未变。
+- 读取 `config.json`、状态文件和钉钉表头，确认 38 个标准字段和默认视图列顺序。
+- 用 `dws aitable field get` 保存最新字段快照；所有生成载荷先按 fieldId、fieldName 和实时 singleSelect 选项校验。
+- 配置模板只含占位符，正式 Base/表/看板 ID 必须显式填写，禁止沿用其他 HR 的生产资源。
 - 检查钉钉 `dws auth status`、薪人薪事 MCP 和内置浏览器登录态。
 - 登录失效时停止写入，让用户在内置浏览器完成登录；不要用旧缓存冒充当天数据。
 - `dry_run=true` 时只产出 CSV/报告，不写钉钉。
@@ -72,19 +78,21 @@ description: 高招台账自动同步：从薪人薪事按 jobOwners 拉取候�
 
 ### 4. Build and validate
 
-```bash
-python scripts/build_ledger.py \
-  --resume-list ./raw/resume_list.json \
-  --stage-info ./raw/stage_info.json \
-  --config ./config.json \
+```powershell
+python scripts/build_ledger.py `
+  --resume-list ./raw/resume_list.json `
+  --stage-info ./raw/stage_info.json `
+  --config ./config.json `
   --out-dir ./out
-python scripts/validate_ledger.py \
-  --ledger ./out/ledger_26col.csv \
-  --interviews ./out/interview_feedback.csv \
-  --funnel ./out/funnel_by_hr.csv
+python scripts/validate_ledger.py `
+  --ledger ./out/ledger_system_fields.csv `
+  --interviews ./out/interview_feedback.csv `
+  --funnel ./out/funnel_by_hr.csv `
+  --fields-json ./raw/fields.json `
+  --strict
 ```
 
-必须确认 26 列表头一致、业务键不重复、状态映射可解释、公开漏斗不含候选人明细。
+必须确认标准表头一致、业务键不重复、状态映射可解释、公开漏斗不含候选人明细。
 
 ### 5. Upsert to DingTalk AI table
 
@@ -97,18 +105,34 @@ python scripts/validate_ledger.py \
 ### 6. Sync personal process fields
 
 - 回读最新表结构和记录，使用 `scripts/sync_process_fields.py` 从个人 Excel 生成 process update/create 载荷。
+- 表内重名直接中止；新建记录必须显式传入 `--hr-value-json`，不得从其他行推断 HR。
+- 非空目标字段默认进入冲突清单，不覆盖；只有人工确认差异后才允许显式使用 `--allow-nonempty-overwrite`。
 - 先分别执行 dws record update/create 的 dry-run；确认后再写入。
 - 未确认的招聘岗位、简历和面评保持待补，不根据面试文本推断。
 - 详细步骤见 `references/process-sync.md`，字段映射见 `references/process-field-mapping.md`。
 
-### 7. Rebuild weekly table and dashboard
+### 7. Sync Tencent Meeting smart minutes
+
+- 使用 `tmeet record search` 定位候选人录制，确认 `has_smart_minutes=true`，再用 `tmeet record smart-minutes` 获取纪要。
+- 通过 manifest 关联钉钉 recordId、面试轮次和 recordFileId，使用 `scripts/sync_tmeet_minutes.py` 并同时传入最新 `--table-json`、`--records-json` 生成更新载荷。
+- 脚本必须核对 recordId、候选人姓名、轮次和对应面试时间；非空目标默认进入冲突清单，不直接覆盖。
+- 智能纪要只写对应轮次的面试情况字段，不改官方面试结果；详细步骤见 `references/tencent-meeting-smart-minutes.md`。
+
+### 8. Apply stale unevaluated rule
+
+- 使用 `scripts/apply_stale_unevaluated_rule.py`，同时传入最新 `--records` 和 `--table-json`，回读面试时间、结果、后续轮次和 Offer/入职状态。
+- 时间必须带时区，Offer/入职按精确枚举判断；取消面试、非法选项或时间异常一律进入复核清单。
+- 仅当最后一个已安排面试阶段为“未评价”且严格超过 72 小时、无后续面试、无积极下游状态时，生成该轮结果改为“未通过”的更新载荷。
+- 先 dry-run，正式写入后再次回读，并复核符合条件的记录数为 0；详细口径见 `references/stale-unevaluated-rule.md`。
+
+### 9. Rebuild weekly table and dashboard
 
 - 个人台账更新后，重新计算并写入周度漏斗表。
 - 当前实例不支持公式字段时，转化率使用 number/percent 预计算。
 - 图表更新是完整配置替换；图表创建后如显示名被改，需要再更新名称。
 - 窗口过窄时只能查看，不能编辑布局；拉宽浏览器后再调整。
 
-### 8. Report
+### 10. Report
 
 只汇报聚合结果和异常：新增、更新、跳过、未评价、缺推荐时间、状态冲突、登录失效；不展示候选人姓名、手机号或面评原文。
 
@@ -142,12 +166,12 @@ python scripts/validate_ledger.py \
 
 可直接发给其他 AI 的一句话：
 
-> 请使用 `gaozhao-ledger-sync` Skill。先读 `SKILL.md` 和 `references/setup-checklist.md`，检查钉钉、薪人薪事登录和权限；今天只做首次全量 dry-run，输出 26 列台账、面试反馈、同步报告和异常清单，不要写钉钉表。
+> 请使用 `gaozhao-ledger-sync` Skill。先读 `SKILL.md` 和 `references/setup-checklist.md`，检查钉钉、薪人薪事登录和权限；今天只做首次全量 dry-run，输出标准台账、面试反馈、同步报告和异常清单，不要写钉钉表。
 
 ## Failure handling
 
 - 薪人薪事登录失效：停止写入并提示重新登录。
-- 钉钉表头被改：停止写入，先恢复 26 列顺序。
+- 钉钉表头被改：停止写入，先核对标准字段和默认视图列顺序。
 - 同一候选人多个岗位：按 `resumeId + applyJobId` 分行，不合并。
 - 状态冲突：写入异常清单，必要时标“待复核”，不要猜入职。
 - 系统外推荐、系统内安排面试：保留记录，推荐时间留空并备注特殊情况。
@@ -155,17 +179,22 @@ python scripts/validate_ledger.py \
 ## References
 
 - `references/setup-checklist.md`：首次登录、权限、ID 收集和验收清单。
-- `references/dingtalk-resources.md`：正式试点 Base、26 列表、周度表和团队看板的真实链接。
+- `references/dingtalk-resources.md`：正式试点 Base、招聘管理表、周度表和团队看板的真实链接。
 - `references/sync-state.md`：全量/增量差异、状态文件、去重、状态变化和重试。
 - `references/aitable-api.md`：钉钉 AI 表格、记录、图表和 upsert API。
-- `references/field-mapping.md`：26 列逐列来源、轮次映射、评价提取。
+- `references/field-mapping.md`：38 个标准字段、fieldId、轮次映射和人工保护口径。
 - `references/process-field-mapping.md`：12 个过程字段、fieldId 和个人 Excel 映射。
 - `references/process-sync.md`：个人过程台账的回读、dry-run、写入和验收流程。
+- `references/tencent-meeting-smart-minutes.md`：腾讯会议智能纪要的检索、生成载荷和验收流程。
+- `references/stale-unevaluated-rule.md`：超时未评价自动转未通过的判定、跳过条件和写入边界。
 - `references/source-api.md`：薪人薪事 MCP、浏览器 XHR 和字段限制。
 - `references/dingtalk-and-permissions.md`：钉钉表结构与权限分层。
 - `references/scheduling.md`：定时任务模板和登录态处理。
+- `scripts/field_rules.py`：字段目录、fieldId/fieldName 和实时 singleSelect 选项校验。
 - `scripts/state_store.py`：状态文件、内容哈希、recordId 映射和重试辅助。
-- `scripts/build_ledger.py`：原始 JSON → 26 列台账/面试明细/漏斗。
+- `scripts/build_ledger.py`：原始 JSON → 标准台账/面试明细/漏斗。
 - `scripts/validate_ledger.py`：写表前校验。
 - `scripts/sync_process_fields.py`：个人 Excel → 钉钉过程字段 update/create 载荷。
+- `scripts/sync_tmeet_minutes.py`：腾讯会议智能纪要 → 钉钉 update 载荷。
+- `scripts/apply_stale_unevaluated_rule.py`：超时未评价 → 未通过更新载荷。
 - `assets/config.example.json`、`assets/sync_state.example.json`：配置和状态模板。

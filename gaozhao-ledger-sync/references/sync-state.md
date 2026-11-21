@@ -57,7 +57,7 @@
 - 标准主键：`resumeId + applyJobId`。
 - 同一候选人投不同岗位：保留不同行，不合并。
 - 同一候选人同一岗位重复出现：更新原行，不追加。
-- 钉钉 26 列不新增外部 ID 字段，因此外部 ID 映射保存在状态文件和同步报告里。
+- 钉钉可见字段不新增外部 ID，因此外部 ID 映射保存在状态文件和同步报告里。
 
 ### 兜底键
 
@@ -79,7 +79,7 @@
 对同一个业务键：
 
 1. 读取状态文件中的钉钉 `recordId`。
-2. 拉取最新 stage-info 并生成 26 列 payload。
+2. 拉取最新 stage-info 并生成标准字段 payload。
 3. 计算内容哈希，与上一次哈希比较。
 4. 哈希不变：跳过详情写入。
 5. 哈希变化：只更新变化字段，保留原 recordId。
@@ -91,7 +91,7 @@
 |---|---|
 | 今天二面待定，过两天变成 Offer | 更新同一行的二面结果、Offer 情况、入职状态；不新建候选人 |
 | 未评价后来补了面评 | 更新面试结果、评分、评语、数据状态，并从未评价数量中移除 |
-| 新增终面/HR 面 | 更新终面时间和终面结果，保留已有一/二面字段 |
+| 新增三面/HR 面 | 更新三面时间和三面结果，保留已有一/二面字段 |
 | Offer 被接受/拒绝/过期 | 更新 Offer 情况；待入职排名只统计接受/待入职/审批中状态 |
 | 待入职变成已入职 | 更新入职状态和入职时间，从待入职排名移到入职排名 |
 | 负责人变更 | 按当前 `jobOwners` 更新 HR 姓名；旧负责人信息进入同步报告 |
@@ -125,7 +125,7 @@ for candidate in candidate_list:
     key = resumeId + applyJobId
     if mode == full or list_snapshot_changed(candidate):
         stage_info = fetch_stage_info(resumeId)
-    payload = build_26col_payload(candidate, stage_info)
+    payload = build_standard_payload(candidate, stage_info)
     if key in state and recordId exists: update changed fields
     else: create record and save recordId
 rebuild weekly table and validate dashboard

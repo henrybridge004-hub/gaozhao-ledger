@@ -111,4 +111,4 @@ https://s.xinrenxinshi.com/recruitment/service/ajax-get-resume-detail-stage-info
 1. `getResumeList` 分页拉候选人，保存 `raw/resume_list.json`。
 2. 对每个 `resumeId` 用浏览器同步 XHR 拉 stage-info，保存 `raw/stage_info.json`。
 3. 如需期望薪资/完整手机号，再按需拉 `getResumeDetail`；不要全量拉详情，避免慢和敏感数据扩散。
-4. 把原始 JSON 交给 `scripts/build_ledger.py`，不要手工拼 26 列。
+4. 把原始 JSON 交给 `scripts/build_ledger.py`，不要手工拼标准字段。

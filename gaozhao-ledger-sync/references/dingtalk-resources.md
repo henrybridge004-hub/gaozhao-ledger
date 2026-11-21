@@ -9,7 +9,7 @@
 | 资源 | ID | 链接 |
 |---|---|---|
 | Base：高招台账（正式试点） | `vy20BglGWOexXo2KsDEk9jn9JA7depqY` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY |
-| 招聘管理（原 26 列 + 12 个过程字段，共 38 字段） | `t4tIt8f` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f |
+| 招聘管理（38 个标准字段） | `t4tIt8f` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3Dt4tIt8f |
 | 周度漏斗分析 | `Y9ctSpD` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26sheetId%3DY9ctSpD |
 | 高招团队周度复盘 | `dashboard-daf0fabe-e32a-47bb-a375-226bced30dbd` | https://alidocs.dingtalk.com/i/nodes/vy20BglGWOexXo2KsDEk9jn9JA7depqY?iframeQuery=entrance%3Ddata%26applicationId%3Ddashboard-daf0fabe-e32a-47bb-a375-226bced30dbd |
 

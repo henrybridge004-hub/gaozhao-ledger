@@ -89,7 +89,7 @@ def upsert_record(state: dict[str, Any], key: str, payload: dict[str, Any],
             "content_hash": new_hash,
             "changed": True,
             "dingtalk_record_id": dingtalk_record_id,
-            "last_status": payload.get("入职状态") or payload.get("offer情况"),
+            "last_status": payload.get("入职状态") or payload.get("Offer情况"),
             "failures": [],
         }
     else:
@@ -98,7 +98,7 @@ def upsert_record(state: dict[str, Any], key: str, payload: dict[str, Any],
         record["last_detail_fetch_at"] = at
         record["changed"] = record.get("content_hash") != new_hash
         record["content_hash"] = new_hash
-        record["last_status"] = payload.get("入职状态") or payload.get("offer情况") or record.get("last_status")
+        record["last_status"] = payload.get("入职状态") or payload.get("Offer情况") or record.get("last_status")
         if dingtalk_record_id:
             record["dingtalk_record_id"] = dingtalk_record_id
     records[key] = record
@@ -145,7 +145,7 @@ def _selftest() -> None:
         key = business_key("r1", "j1")
         begin_run(state, "run-1", "full", "2026-11-16T20:30:00+08:00",
                   {"start": "2026-10-01", "end": "2026-11-16"})
-        rec = upsert_record(state, key, {"offer情况": "无", "入职状态": "未入职"},
+        rec = upsert_record(state, key, {"Offer情况": "无", "入职状态": "未入职"},
                             "2026-11-16T20:30:00+08:00")
         assert rec["changed"] is True
         mark_written(state, key, "rec-001", "2026-11-16T20:31:00+08:00")
@@ -154,7 +154,7 @@ def _selftest() -> None:
         reloaded = load_state(path)
         assert reloaded["records"][key]["dingtalk_record_id"] == "rec-001"
         # Same payload is unchanged; later status move remains on the same key.
-        rec2 = upsert_record(reloaded, key, {"offer情况": "待入职", "入职状态": "待入职"},
+        rec2 = upsert_record(reloaded, key, {"Offer情况": "待入职", "入职状态": "待入职"},
                              "2026-11-17T20:30:00+08:00")
         assert rec2["changed"] is True
         assert reloaded["records"][key]["dingtalk_record_id"] == "rec-001"

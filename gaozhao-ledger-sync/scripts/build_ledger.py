@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Build the fixed 26-column GaoZhao ledger from Xinrenxinshi raw JSON.
+"""Build the system-field GaoZhao ledger from Xinrenxinshi raw JSON.
 
 Inputs:
   --resume-list  getResumeList response JSON
@@ -8,7 +8,7 @@ Inputs:
   --out-dir      output directory
 
 Outputs:
-  ledger_26col.csv
+  ledger_system_fields.csv
   interview_feedback.csv
   funnel_by_hr.csv
   sync_report.json
@@ -28,10 +28,10 @@ LEDGER_HEADERS = [
     "HR姓名", "候选人姓名", "来源渠道", "城市", "招聘岗位", "手机号",
     "最近任职公司", "上家任职职位", "薪资架构", "沟通备注", "HR沟通结果",
     "推荐简历时间", "简历推荐是否通过",
-    "一轮面试时间", "未通过/未参加/考虑中具体原因（若未放弃无需填写）", "一轮面试结果",
-    "二轮面试时间", "未通过/未参加/考虑中具体原因（若未放弃无需填写）", "二轮面试结果",
-    "终面面试时间", "未通过/未参加/考虑中具体原因（若未放弃无需填写）", "终面面试结果",
-    "offer情况", "入职状态", "入职时间", "备注",
+    "一面面试时间", "一面原因", "一面面试结果",
+    "二面面试时间", "二面原因", "二面面试结果",
+    "三面面试时间", "三面原因", "三面面试结果",
+    "Offer情况", "入职状态", "入职时间", "备注",
 ]
 
 INTERVIEW_HEADERS = [
@@ -103,9 +103,20 @@ def fmt_ts(value: Any, tz: timezone) -> str:
     if isinstance(value, str):
         return value
     try:
-        return datetime.fromtimestamp(int(value), tz).strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = int(value)
+        if abs(timestamp) >= 100_000_000_000:
+            timestamp = timestamp / 1000
+        return datetime.fromtimestamp(timestamp, tz).strftime("%Y-%m-%d %H:%M:%S")
     except (TypeError, ValueError, OSError):
         return str(value)
+
+
+def time_reached(value: str, now: datetime) -> bool:
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=now.tzinfo)
+    except (TypeError, ValueError):
+        return False
+    return parsed <= now
 
 
 def mask_mobile(value: Any) -> str:
@@ -271,7 +282,7 @@ def interview_from_log(log: dict, stage_name: str, tz: timezone) -> dict:
 
 
 def effective_rounds(interviews: list[dict]) -> list[dict]:
-    """Map raw rounds to one/two/final, including the 'stuck at first round' case."""
+    """Map raw rounds to first/second/third, including the 'stuck at first round' case."""
     ordered = sorted(interviews, key=lambda x: str(x.get("time") or ""))
     # Mark a second '业务面试-初试' on the same 一面 stage as actual second round.
     for i, current in enumerate(ordered):
@@ -291,8 +302,8 @@ def effective_rounds(interviews: list[dict]) -> list[dict]:
             continue
         if prev.get("data_status") == "已评价":
             continue
-        current["effective_round"] = "二轮"
-        current["mapped_note"] = "系统仍挂一面，按业务实际映射二轮"
+        current["effective_round"] = "二面"
+        current["mapped_note"] = "系统仍挂一面，按业务实际映射二面"
 
     for item in ordered:
         if item.get("effective_round"):
@@ -300,43 +311,56 @@ def effective_rounds(interviews: list[dict]) -> list[dict]:
         raw = item["raw_round"]
         stage = item["stage"]
         if "初试" in raw:
-            item["effective_round"] = "一轮"
+            item["effective_round"] = "一面"
         elif "复试" in raw:
-            item["effective_round"] = "二轮"
-        elif "终试" in raw or "终面" in raw:
-            item["effective_round"] = "终面"
+            item["effective_round"] = "二面"
+        elif "终试" in raw or "三面" in raw:
+            item["effective_round"] = "三面"
         elif "HR" in raw or "HRBP" in raw:
-            item["effective_round"] = "终面"
+            item["effective_round"] = "三面"
         elif "二面" in stage:
-            item["effective_round"] = "二轮"
-        elif "终面" in stage:
-            item["effective_round"] = "终面"
+            item["effective_round"] = "二面"
+        elif "三面" in stage:
+            item["effective_round"] = "三面"
         else:
-            item["effective_round"] = "一轮"
+            item["effective_round"] = "一面"
     return ordered
 
 
+# Values are restricted to the current DingTalk singleSelect options. Source
+# states without an exact business equivalent stay blank and go to the report.
+STATUS_TO_OFFER = {
+    6: "接受offer", 7: "接受offer", 8: "接受offer", 9: "无",
+    10: "无", 11: "无", 12: "无", 13: "无", 14: "无",
+    30: "已发offer", 31: "接受offer", 32: "未发offer",
+    33: "拒绝offer", 34: "接受offer", 37: "未发offer",
+    50: "待入职", 52: "待入职",
+    60: "录用审批中", 61: "未发offer", 62: "未发offer",
+    2000: "无", 2001: "无", 2002: "无", 2003: "无", 2004: "无",
+}
+STATUS_TO_ONBOARD = {
+    6: "已入职", 7: "已入职", 34: "已入职",
+    50: "待入职", 60: "待入职（审批中）",
+    **{status: "未入职" for status in (8, 9, 10, 11, 12, 13, 14, 30, 31, 32, 33, 37, 52, 61, 62, 2000, 2001, 2002, 2003, 2004)},
+}
+STATUS_DETAIL = {
+    8: "源系统已离职；钉钉入职状态按未入职记录",
+    9: "源系统已归档",
+    11: "源系统待定",
+    30: "offer待确认",
+    32: "offer已过期",
+    52: "待入职已过期",
+    61: "offer审批通过，尚未确认已发送",
+    62: "录用审批未通过",
+}
+
+
 def status_to_offer(status: int) -> str:
-    mapping = {
-        6: "已入职", 7: "已入职", 8: "已离职", 9: "已归档",
-        10: "无", 11: "待定", 12: "无", 13: "无", 14: "无",
-        30: "offer待确认", 31: "offer已接受", 32: "offer已过期",
-        33: "offer已拒绝", 34: "已入职", 37: "offer待发送",
-        50: "待入职", 52: "待入职已过期",
-        60: "录用审批中", 61: "offer审批通过", 62: "审批未通过",
-        2000: "无", 2001: "无", 2002: "无", 2003: "无", 2004: "无",
-    }
-    return mapping.get(status, f"未知状态({status})")
+    return STATUS_TO_OFFER.get(status, "")
 
 
 def status_to_onboard(status: int) -> str:
-    if status in (6, 7, 34):
-        return "已入职"
-    if status in (50, 52):
-        return "待入职" if status == 50 else "待入职已过期"
-    if status == 8:
-        return "已离职"
-    return "未入职"
+    return STATUS_TO_ONBOARD.get(status, "")
 
 
 def find_recommend_log(stages: list[dict]) -> dict | None:
@@ -365,7 +389,9 @@ def build_candidate(item: dict, stages: list[dict], config: dict, tz: timezone) 
     rec_remark = clean_remark(recommend_log.get("actionRemark")) if recommend_log else ""
     screen = screen_from_log(recommend_log) if recommend_log else "未推荐"
 
-    interviews = effective_rounds(all_interviews(stages, tz))
+    interviews_all = all_interviews(stages, tz)
+    canceled_interviews = [item for item in interviews_all if item.get("canceled")]
+    interviews = effective_rounds([item for item in interviews_all if not item.get("canceled")])
     current_stage = ""
     for stage in stages:
         if stage.get("current"):
@@ -382,11 +408,11 @@ def build_candidate(item: dict, stages: list[dict], config: dict, tz: timezone) 
     if salary and expect:
         salary_text = f"上一份{salary}；期望{expect}"
     elif salary:
-        salary_text = f"上一份{salary}；期望未抓取"
+        salary_text = f"上一份{salary}"
     elif expect:
         salary_text = f"期望{expect}"
     else:
-        salary_text = "未抓取"
+        salary_text = ""
 
     if recommend_log:
         note = "按 jobOwners 口径纳入"
@@ -403,10 +429,17 @@ def build_candidate(item: dict, stages: list[dict], config: dict, tz: timezone) 
         note += "；系统状态待入职，实际入职状态待招聘运营更新"
     if "入职" in current_stage and status not in (6, 7, 34, 50, 52):
         note += f"；状态待复核（currentStage={current_stage}，resumeLibraryStatus={status}）"
+    if status in STATUS_DETAIL:
+        note += f"；{STATUS_DETAIL[status]}"
+    status_unmapped = status not in STATUS_TO_OFFER or status not in STATUS_TO_ONBOARD
+    if status_unmapped:
+        note += f"；resumeLibraryStatus={status}无已确认映射，Offer/入职字段留空待复核"
+    if canceled_interviews:
+        note += f"；已排除{len(canceled_interviews)}场取消面试"
 
-    one = by_round.get("一轮", {})
-    two = by_round.get("二轮", {})
-    final = by_round.get("终面", {})
+    one = by_round.get("一面", {})
+    two = by_round.get("二面", {})
+    final = by_round.get("三面", {})
 
     row = [
         hr_name,
@@ -460,7 +493,10 @@ def build_candidate(item: dict, stages: list[dict], config: dict, tz: timezone) 
         "recommended": bool(recommend_log),
         "screen": screen,
         "interviews": interviews,
+        "canceled_interviews": canceled_interviews,
         "status": status,
+        "status_unmapped": status_unmapped,
+        "salary_missing": not salary and not expect,
         "stage_type": item.get("stageTypeDesc"),
         "current_stage": current_stage,
     }
@@ -500,7 +536,7 @@ def main() -> None:
         feedback_rows.extend(feedback)
         audits.append(audit)
 
-    with (out / "ledger_26col.csv").open("w", encoding="utf-8-sig", newline="") as f:
+    with (out / "ledger_system_fields.csv").open("w", encoding="utf-8-sig", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(LEDGER_HEADERS)
         writer.writerows(ledger_rows)
@@ -522,7 +558,7 @@ def main() -> None:
     offer = 0
     onboard = 0
     for a in audits:
-        if any(str(i.get("time_text") or "") <= now.strftime("%Y-%m-%d %H:%M:%S") and i.get("time_text") for i in a["interviews"]):
+        if any(time_reached(str(i.get("time_text") or ""), now) for i in a["interviews"]):
             interviewed += 1
         if any(i.get("result") == "通过" for i in a["interviews"]):
             interview_passed += 1
@@ -561,6 +597,10 @@ def main() -> None:
         {"resumeId": a["resumeId"], "name": a["name"], "status": a["status"], "current_stage": a.get("current_stage")}
         for a in audits if a["status"] == 9 and "入职" in str(a.get("current_stage", ""))
     ]
+    unresolved_statuses = [
+        {"resumeId": a["resumeId"], "name": a["name"], "status": a["status"]}
+        for a in audits if a.get("status_unmapped")
+    ]
 
     report = {
         "hr_name": hr_name,
@@ -578,6 +618,9 @@ def main() -> None:
         "duplicate_keys": duplicate_list,
         "unrated_interviews": unrated,
         "status_conflicts": status_conflicts,
+        "unresolved_statuses": unresolved_statuses,
+        "canceled_interviews_excluded": sum(len(a.get("canceled_interviews") or []) for a in audits),
+        "salary_missing_count": sum(1 for a in audits if a.get("salary_missing")),
         "not_recommended": sum(1 for a in audits if not a["recommended"]),
         "audit": audits,
     }

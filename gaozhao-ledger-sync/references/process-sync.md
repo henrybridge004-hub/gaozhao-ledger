@@ -1,6 +1,6 @@
 # 个人过程台账同步流程
 
-该流程用于把 HR 个人 Excel 中的简历、电话沟通和面试过程字段同步到钉钉 AI 表格，不替代原 26 列自动同步。
+该流程用于把 HR 个人 Excel 中的简历、电话沟通和面试过程字段同步到钉钉 AI 表格，不替代官方系统字段自动同步。
 
 ## 1. 回读钉钉结构和记录
 
@@ -27,16 +27,25 @@ python gaozhao-ledger-sync/scripts/sync_process_fields.py `
   --table-json ./table.json `
   --records-json ./records.json `
   --out-dir ./out `
+  --hr-value-json ./hr_value.json `
   --resume-basic-json ./resume_basic.json
 ```
 
-`resume-basic-json` 可省略。它只在 Excel 没有“简历情况”时作为本地结构化摘要来源；没有数据权限时不要伪造。
+`resume-basic-json` 可省略。它只在 Excel 没有“简历情况”且钉钉目标字段为空时作为本地结构化摘要来源；没有数据权限时不要伪造。
+
+安全边界：
+
+- 表内出现重名候选人时脚本直接中止，不猜测更新对象。
+- 只要有新建记录，就必须显式传入 `--hr-value-json`；不得从现有行的多数 HR 推断。
+- 非空目标字段默认受保护；内容不一致写入 `conflicts`，不生成该字段更新。
+- 只有逐项确认冲突后，才可显式增加 `--allow-nonempty-overwrite`。
+- 生成的载荷会按最新字段快照和实时 singleSelect 选项再次校验。
 
 输出文件：
 
 - `process_updates.json`：已存在候选人的字段更新。
-- `process_creates.json`：未匹配候选人的新建记录。
-- `process_sync_report.json`：聚合同步报告。
+- `process_creates.json`：未匹配候选人的新建记录；新建必须显式传入 `--hr-value-json`。
+- `process_sync_report.json`：聚合同步报告，包含冲突数量；非空字段冲突不会被静默覆盖。
 
 ## 3. 先 dry-run
 

@@ -36,7 +36,7 @@ dws aitable field get --base-id <baseId> --table-id <tableId> --format json
 - fieldId 与字段名的对应关系。
 - 单选/多选选项 ID 和选项名称。
 - 日期、人员、数字、百分比等字段的真实类型。
-- 表头是否仍保持 26 列顺序。
+- 标准字段是否完整，默认视图列顺序是否符合口径。
 
 ## 3. 查询记录
 
@@ -134,7 +134,7 @@ dws aitable record update \
 
 1. 查询钉钉现有记录，只取同步所需字段。
 2. 优先用状态文件中的 `resumeId + applyJobId -> dingtalk_record_id` 映射。
-3. 26 列没有外部 ID 时，用“姓名 + 手机号 + 岗位”兜底；仍冲突则进异常，不自动写入。
+3. 表内没有外部 ID 字段时，用“姓名 + 手机号 + 岗位”兜底；仍冲突则进异常，不自动写入。
 4. 对比内容哈希，拆成 `creates`、`updates`、`unchanged` 三组。
 5. 每批最多 100 条，调用 create/update。
 6. 成功后把返回的 recordId 和写入时间保存到状态文件。
